@@ -68,6 +68,7 @@ if __name__ == '__main__':
 import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 import random
+import sqlite3
 
 
 if __name__ == '__main__':
@@ -77,7 +78,6 @@ if __name__ == '__main__':
                 token='5b0326f036d243d4d08f827d12a3a1a04a28a39c820905e72c71b95286c124e408924571449b6afb5f866')
             vk = vk_session.get_api()
             longpoll = VkBotLongPoll(vk_session,'193996085')
-
             for event in longpoll.listen():
 
                 if event.type == VkBotEventType.MESSAGE_NEW and event.from_chat:
@@ -86,23 +86,75 @@ if __name__ == '__main__':
                     print('Для меня от:', event.obj.message['from_id'])
                     print('Текст:', event.obj.message['text'])
                     x = event.obj.message['text']
+
+
+
+                    besedainfo = vk.messages.getConversationMembers(peer_id=2000000000+event.chat_id, random_id=random.randint(0, 2 ** 64))
+                    users = besedainfo['profiles']
+                    con = sqlite3.connect("groups.db")
+                    cur = con.cursor()
+                    checkbase = 'BESEDANUMBER'+str(event.chat_id) in cur.execute('''SELECT * FROM Sqlite_master WHERE type = "table"''').fetchall()[0] if cur.execute('''SELECT * FROM Sqlite_master WHERE type = "table"''').fetchall() else []
+                    if checkbase:
+                        pass
+                    else:
+                        result = cur.execute(f"""CREATE TABLE {'BESEDANUMBER'+str(event.chat_id)} (
+ID int,
+BANONOFF int,
+STATUS int);""")
+                    blacklist = cur.execute(f'''SELECT ID FROM {'BESEDANUMBER'+str(event.chat_id)} WHERE BANONOFF=1''').fetchall()
+                    con.close()
+                    for i in users:
+                        if i['id'] in blacklist[0] if blacklist else []:
+                            vk.messages.removeChatUser(chat_id=int(event.chat_id),
+                                                               user_id=i['id'],
+                                                               random_id=random.randint(0, 2 ** 64))
+
+
                     
                     if x:
-                        if x[:8] == '!повтори':
+                        if x[:8] == '!мбповтори':
                             vk.messages.send(chat_id=int(event.chat_id),
                                              message=x[8:] if x[8:] else 'Вы не сказали что повторять!',
                                              random_id=random.randint(0, 2 ** 64))
-                        elif x[:5] == '!бан ':
+                        elif x[:5] == '!мбкик ':
                             vk.messages.removeChatUser(chat_id=int(event.chat_id),
                                                        user_id=int(x[5:]),
                                                        random_id=random.randint(0, 2 ** 64))
-                        elif x[:11] == '!мультибан ':
+                        elif x[:11] == '!мбмультикик ':
                             x = x[11:].split()
                             for i in x:
                                 vk.messages.removeChatUser(chat_id=int(event.chat_id),
                                                            user_id=i,
                                                            random_id=random.randint(0, 2 ** 64))
-                        elif x[0]=='!':
+                        elif x[:7] == '!мббан ':
+                            x = x[7:]
+                            con = sqlite3.connect("groups.db")
+                            cur = con.cursor()
+                            checkbase = 'BESEDANUMBER'+str(event.chat_id) in cur.execute('''SELECT * FROM Sqlite_master WHERE type = "table"''').fetchall()[0]
+                            if checkbase:
+                                pass
+                            else:
+                                result = cur.execute(f"""CREATE TABLE {'BESEDANUMBER'+str(event.chat_id)} (
+ID int,
+BANONOFF int,
+STATUS int);""")
+                            result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({int(x)}, 1, 0) ''')
+                            con.commit()
+                            con.close()
+                            vk.messages.removeChatUser(chat_id=int(event.chat_id),
+                                                       user_id=int(x),
+                                                       random_id=random.randint(0, 2 ** 64))
+                            print('BAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                        elif x[:17] == '!мбайдиучастников':
+                            besedainfo = vk.messages.getConversationMembers(peer_id=2000000000+event.chat_id, random_id=random.randint(0, 2 ** 64))
+                            users = besedainfo['profiles']
+                            for i in users:
+                                print(i['first_name'] + ' ' + i['last_name'], 'first_id:'+str(i['id']), 'second_id:'+i['screen_name'], 'Online:'+str(bool(i['online'])), sep='\n')
+                                vk.messages.send(chat_id=int(event.chat_id),
+                                             message='\n'.join([i['first_name'] + ' ' + i['last_name'], 'first_id:'+str(i['id']), 'second_id:'+i['screen_name'], 'Online:'+str(bool(i['online']))]),
+                                             random_id=random.randint(0, 2 ** 64))
+                        
+                        elif x[:3]=='!мб':
                             vk.messages.send(chat_id=int(event.chat_id),
                                              message='Не знаю такой команды(',
                                              random_id=random.randint(0, 2 ** 64))
@@ -123,8 +175,10 @@ if __name__ == '__main__':
                                              message='Не знаю такой команды(',
                                              random_id=random.randint(0, 2 ** 64))
         except vk_api.exceptions.ApiError:
+            
             vk.messages.send(chat_id=int(event.chat_id),
                                              message='Низзя!',
                                              random_id=random.randint(0, 2 ** 64))
         except ValueError:
             pass
+

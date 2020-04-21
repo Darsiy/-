@@ -65,6 +65,23 @@ if __name__ == '__main__':
     VKPAY_TRANSACTION = 'vkpay_transaction'
 """
 '193996085-,jn'
+"Роли"
+ROLIFORBESEDA = {0: 'Житель',
+                 1: 'Полицейский',
+                 2: 'Детектив',
+                 3: 'Министр',
+                 4: 'Президент',
+                 5: 'Бог'}
+ROLIFORBESEDA2 = {'Житель': 0,
+                 'Полицейский': 1,
+                 'Детектив': 2,
+                 'Министр': 3,
+                 'Президент': 4,
+                 'Бог': 5}
+'Роли конец'
+'bog'
+bogid = 542650732
+'bog'
 import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 import random
@@ -101,10 +118,12 @@ if __name__ == '__main__':
 ID int,
 BANONOFF int,
 STATUS int);""")
+                        result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({bogid}, 0, 5) ''')
+                        con.commit()
                     blacklist = cur.execute(f'''SELECT ID FROM {'BESEDANUMBER'+str(event.chat_id)} WHERE BANONOFF=1''').fetchall()
                     con.close()
                     for i in users:
-                        if i['id'] in blacklist[0] if blacklist else []:
+                        if i['id'] in [i[0] for i in blacklist] if blacklist else []:
                             vk.messages.removeChatUser(chat_id=int(event.chat_id),
                                                                user_id=i['id'],
                                                                random_id=random.randint(0, 2 ** 64))
@@ -126,6 +145,49 @@ STATUS int);""")
                                 vk.messages.removeChatUser(chat_id=int(event.chat_id),
                                                            user_id=i,
                                                            random_id=random.randint(0, 2 ** 64))
+                        elif x[:12] == '!мбдатьроль ':
+                            x = x[12:].split()
+                            numberrol = ROLIFORBESEDA2[x[0]]
+                            con = sqlite3.connect("groups.db")
+                            cur = con.cursor()
+                            checkbase = 'BESEDANUMBER'+str(event.chat_id) in cur.execute('''SELECT * FROM Sqlite_master WHERE type = "table"''').fetchall()[0]
+                            if checkbase:
+                                pass
+                            else:
+                                result = cur.execute(f"""CREATE TABLE {'BESEDANUMBER'+str(event.chat_id)} (
+ID int,
+BANONOFF int,
+STATUS int);""")
+                                result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({bogid}, 0, 5) ''')
+                                con.commit()
+                            if x[1] not in [i[0] for i in cur.execute('''SELECT ID FROM {'BESEDANUMBER'+str(event.chat_id)}''').fetchall()]:
+                                result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({int(x[1])}, 0, {numberrol}) ''')
+                            else:
+                                result = cur.execute(f'''UPDATE {'BESEDANUMBER'+str(event.chat_id)}
+SET STATUS = {numberrol}
+WHERE ID = {x[1]}''')
+                            con.commit()
+                            con.close()
+                        elif x[:8] == '!мброль ':
+                            x = x[8:]
+                            con = sqlite3.connect("groups.db")
+                            cur = con.cursor()
+                            checkbase = 'BESEDANUMBER'+str(event.chat_id) in cur.execute('''SELECT * FROM Sqlite_master WHERE type = "table"''').fetchall()[0]
+                            if checkbase:
+                                pass
+                            else:
+                                result = cur.execute(f"""CREATE TABLE {'BESEDANUMBER'+str(event.chat_id)} (
+ID int,
+BANONOFF int,
+STATUS int);""")
+                                result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({bogid}, 0, 5) ''')
+                                con.commit()
+                            result = cur.execute(f'''SELECT STATUS FROM {'BESEDANUMBER'+str(event.chat_id)} WHERE ID = {x}''').fetchall()
+                            if result:
+                                print(ROLIFORBESEDA[result[0][0]])
+                                vk.messages.send(chat_id=int(event.chat_id),
+                                             message=f'Роль {x}:' + ROLIFORBESEDA[result[0][0]],
+                                             random_id=random.randint(0, 2 ** 64))
                         elif x[:7] == '!мббан ':
                             x = x[7:]
                             con = sqlite3.connect("groups.db")
@@ -138,13 +200,70 @@ STATUS int);""")
 ID int,
 BANONOFF int,
 STATUS int);""")
-                            result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({int(x)}, 1, 0) ''')
+                                result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({bogid}, 0, 5) ''')
+                                con.commit()
+                            if x not in [i[0] for i in cur.execute(f'''SELECT ID FROM {'BESEDANUMBER'+str(event.chat_id)}''').fetchall()]:
+                                result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({int(x)}, 1, 0) ''')
+                            else:
+                                result = cur.execute(f'''UPDATE {'BESEDANUMBER'+str(event.chat_id)}
+SET STATUS = 0,
+BANONOFF = 1
+WHERE ID = {x}''')
                             con.commit()
                             con.close()
                             vk.messages.removeChatUser(chat_id=int(event.chat_id),
                                                        user_id=int(x),
                                                        random_id=random.randint(0, 2 ** 64))
                             print('BAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                        elif x[:13] == '!мбмультибан ':
+                            x = x[13:].split()
+                            for i in x:
+                                xi = i
+                                con = sqlite3.connect("groups.db")
+                                cur = con.cursor()
+                                checkbase = 'BESEDANUMBER'+str(event.chat_id) in cur.execute(f'''SELECT * FROM Sqlite_master WHERE type = "table"''').fetchall()[0]
+                                if checkbase:
+                                    pass
+                                else:
+                                    result = cur.execute(f"""CREATE TABLE {'BESEDANUMBER'+str(event.chat_id)} (
+    ID int,
+    BANONOFF int,
+    STATUS int);""")
+                                    result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({bogid}, 0, 5) ''')
+                                    con.commit()
+                                if xi not in [i[0] for i in cur.execute(f'''SELECT ID FROM {'BESEDANUMBER'+str(event.chat_id)}''').fetchall()]:
+                                    result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({int(xi)}, 1, 0) ''')
+                                else:
+                                    result = cur.execute(f'''UPDATE {'BESEDANUMBER'+str(event.chat_id)}
+SET STATUS = 0,
+BANONOFF = 1
+WHERE ID = {xi}''')
+                                con.commit()
+                                con.close()
+                                vk.messages.removeChatUser(chat_id=int(event.chat_id),
+                                                           user_id=int(xi),
+                                                           random_id=random.randint(0, 2 ** 64))
+                                print('BAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                        elif x[:10] == '!мбразбан ':
+                            x = x[10:]
+                            con = sqlite3.connect("groups.db")
+                            cur = con.cursor()
+                            checkbase = 'BESEDANUMBER'+str(event.chat_id) in cur.execute(f'''SELECT * FROM Sqlite_master WHERE type = "table"''').fetchall()[0]
+                            if checkbase:
+                                pass
+                            else:
+                                result = cur.execute(f"""CREATE TABLE {'BESEDANUMBER'+str(event.chat_id)} (
+ID int,
+BANONOFF int,
+STATUS int);""")
+                                result = cur.execute(f'''INSERT INTO {'BESEDANUMBER'+str(event.chat_id)}(ID, BANONOFF, STATUS) VALUES({bogid}, 0, 5) ''')
+                                con.commit()
+                            result = cur.execute(f'''UPDATE {'BESEDANUMBER'+str(event.chat_id)}
+SET STATUS = 0,
+BANONOFF = 0
+WHERE ID = {x}''')
+                            con.commit()
+                            con.close()
                         elif x[:17] == '!мбайдиучастников':
                             besedainfo = vk.messages.getConversationMembers(peer_id=2000000000+event.chat_id, random_id=random.randint(0, 2 ** 64))
                             users = besedainfo['profiles']
@@ -158,22 +277,6 @@ STATUS int);""")
                             vk.messages.send(chat_id=int(event.chat_id),
                                              message='Не знаю такой команды(',
                                              random_id=random.randint(0, 2 ** 64))
-                elif event.type == VkBotEventType.MESSAGE_NEW:
-                    print(event)
-                    print('Новое сообщение:')
-                    print('Для меня от:', event.obj.message['from_id'])
-                    print('Текст:', event.obj.message['text'])
-                    x = event.obj.message['text']
-                    
-                    if x:
-                        if x[:8] == '!повтори':
-                            vk.messages.send(user_id=event.obj.message['from_id'],
-                                             message=x[8:] if x[8:] else 'Вы не сказали что повторять!',
-                                             random_id=random.randint(0, 2 ** 64))
-                        elif x[0]=='!':
-                            vk.messages.send(user_id=event.obj.message['from_id'],
-                                             message='Не знаю такой команды(',
-                                             random_id=random.randint(0, 2 ** 64))
         except vk_api.exceptions.ApiError:
             
             vk.messages.send(chat_id=int(event.chat_id),
@@ -182,3 +285,5 @@ STATUS int);""")
         except ValueError:
             pass
 
+        #
+        

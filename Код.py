@@ -126,6 +126,8 @@ def miilne(idkto, dannonbeseda, nf, idob=False, gforrol=False):
             return True if rol >= 4 else False
         elif nf == 12:
             return True if rol >= 4 else False
+        elif nf == 13:
+            return True if rol >= 4 else False
     else:
         return False
 
@@ -474,8 +476,11 @@ if __name__ == '__main__':
                                     con.close()
                                     print(1 + 'b')
                             elif x == '!мбвыключениебота':
-                                glob=0
-                                break
+                                if miilne(event.obj.message['from_id'], 'BESEDANUMBER'+str(event.chat_id), 13):
+                                    glob=0
+                                    break
+                                else:
+                                    print(1 + 'b')
                                     
                             elif x[:3]=='!мб':
                                 vk.messages.send(chat_id=int(event.chat_id),
